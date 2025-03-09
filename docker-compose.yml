@@ -1,0 +1,73 @@
+version: "3.7"
+services:
+  prueba:
+    build:
+      args:
+        user: adriana
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: dashboard
+    container_name: prueba_app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - .:/var/www
+    networks:
+      - inter
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+#      SERVICE_TAGS: dev
+#      SERVICE_NAME: mysql
+    ports:
+      - 3308:3306
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - inter
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_ui
+    links:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3308
+      PMA_ARBITRARY: 1
+      UPLOAD_LIMIT: 1G
+    restart: always
+    ports:
+      - 8072:80
+    depends_on:
+    - mysql
+    networks:
+    - inter
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_server
+    restart: unless-stopped
+    ports:
+      - 8070:80
+#      - 3306:3306
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - inter
+    depends_on:
+      - phpmyadmin
+      - mysql
+
+networks:
+  inter:
+    driver: bridge
