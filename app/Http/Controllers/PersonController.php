@@ -17,32 +17,40 @@ class PersonController extends Controller
 
 	public function grid(PersonRequest $request)
 	{
-		$records = Person::select('*');
+		try {
+			$records = Person::select('*');
 
-		if($request->inactive == 0) $records->where('status','1');
+			if($request->inactive == 0) $records->where('status','1');
 
-		return Datatables::of($records)
-			->addColumn('actions',function($record){
-				return view('common.buttons',[
-					'record'     => $record,
-					'url'        => 'Person',
-					'permission' => 'Person',
-				])->render();
-			})
-			->escapeColumns([])
-			->make(true);
+			return Datatables::of($records)
+				->addColumn('actions',function($record){
+					return view('common.buttons',[
+						'record'     => $record,
+						'url'        => 'Person',
+						'permission' => 'Person',
+					])->render();
+				})
+				->escapeColumns([])
+				->make(true);
+		} catch (\Throwable $th) {
+			return response()->json(['errors' => ['Bad Request']], 400);
+		}
 	}
 
 	public function create(){
-		$action = 'add';
-		$url    = '/Person';
-		$Type_person = Type_person::all()->where('status','1');
+		try {
+			$action = 'add';
+			$url    = '/Person';
+			$Type_person = Type_person::all()->where('status','1');
 
-		return view('admin_products.Person.form',[
-			'Type_person' => $Type_person,
-			'action' => $action,
-			'url'    => $url
-		]);
+			return view('admin_products.Person.form',[
+				'Type_person' => $Type_person,
+				'action' => $action,
+				'url'    => $url
+			]);
+		} catch (\Throwable $th) {
+			return response()->json(['errors' => ['Bad Request']], 400);
+		}
 	}
 
 	public function store(PersonRequest $request){
@@ -51,75 +59,136 @@ class PersonController extends Controller
 			$item->save();
 			$out = redirect('/Person')->with('message', 'Información actualizada correctamente');
 		}
-		catch (\Throwable $th) {$out = response()->json(['errors' => ['Bad Request']], 400);}
+		catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
 		return $out;
 	}
 
 	public function show($id){
-		$item = Person::find($id);
-		$action = 'show';
-		$url    = '';
-		$Type_person = Type_person::all()->where('status','1');
+		try {
+			$item = Person::find($id);
+			$action = 'show';
+			$url    = '';
+			$Type_person = Type_person::all()->where('status','1');
 
-		return view('admin_products.Person.form', [
-			'Type_person' => $Type_person,
-			'record' => $item,
-			'action' => $action,
-			'url'    => $url,
-			'action_title' => 'Ver'
-		]);
+			return view('admin_products.Person.form', [
+				'Type_person' => $Type_person,
+				'record' => $item,
+				'action' => $action,
+				'url'    => $url,
+				'action_title' => 'Ver'
+			]);
+		} catch (\Throwable $th) {
+			return response()->json(['errors' => ['Bad Request']], 400);
+		}
 	}
 
 	public function edit($id){
-		$item = Person::find($id);
-		$action = 'edit';
-		$url    = '/Person/'.$item->id;
-		$Type_person = Type_person::all()->where('status','1');
+		try {
+			$item = Person::find($id);
+			$action = 'edit';
+			$url    = '/Person/'.$item->id;
+			$Type_person = Type_person::all()->where('status','1');
 
-		return view('admin_products.Person.form', [
-			'Type_person' => $Type_person,
-			'record' => $item,
-			'action' => $action,
-			'url'    => $url,
-			'action_title' => 'Editar'
-		]);
+			return view('admin_products.Person.form', [
+				'Type_person' => $Type_person,
+				'record' => $item,
+				'action' => $action,
+				'url'    => $url,
+				'action_title' => 'Editar'
+			]);
+		} catch (\Throwable $th) {
+			return response()->json(['errors' => ['Bad Request']], 400);
+		}
 	}
 
 	public function update($id, PersonRequest $request){
-		$item = Person::find($id);
-		if($item){
-			$item->fill($request->all());
-			$item->save();
-			$out = redirect('/Person')->with('message', 'Información actualizada correctamente');
+		try {
+			$item = Person::find($id);
+			if($item){
+				$item->fill($request->all());
+				$item->save();
+				$out = redirect('/Person')->with('message', 'Información actualizada correctamente');
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
-
 		return $out;
 	}
 
 	public function destroy($id){
-		$item = Person::find($id);
-		if($item){
-			$item->status = 0;
-			$item->save();
-			$out = response()->json(['data' => $item, 'status' => 200], 200);
+		try {
+			$item = Person::find($id);
+			if($item){
+				$item->status = 0;
+				$item->save();
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
-
 		return $out;
 	}
 
 	public function recover($id){
-		$item = Person::find($id);
-		if($item){
-			$item->status = 1;
-			$item->save();
-			$out = response()->json(['data' => $item, 'status' => 200], 200);
+		try {
+			$item = Person::find($id);
+			if($item){
+				$item->status = 1;
+				$item->save();
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
-
 		return $out;
 	}
 
+	public function getAll()
+	{
+		try {
+			$items = Person::with('type_person')->get();
+			$out = response()->json(['data' => $items, 'status' => 200], 200);
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
+
+	public function getSingle($id)
+	{
+		try {
+			$item = Person::with('type_person')->find($id);
+			if ($item) {
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			} else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
+
+	public function storeApi(PersonRequest $request){
+		try {
+			$item = new Person($request->all());
+			$item->save();
+			$out = response()->json(['data' => $item, 'status' => 201], 201);
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
 }
 ?>

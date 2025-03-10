@@ -86,40 +86,91 @@ class StoreController extends Controller
 	}
 
 	public function update($id, StoreRequest $request){
-		$item = Store::find($id);
-		if($item){
-			$item->fill($request->all());
-			$item->save();
-			$out = redirect('/Store')->with('message', 'Información actualizada correctamente');
+		try {
+			$item = Store::find($id);
+			if($item){
+				$item->fill($request->all());
+				$item->save();
+				$out = redirect('/Store')->with('message', 'Información actualizada correctamente');
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
-
 		return $out;
 	}
 
 	public function destroy($id){
-		$item = Store::find($id);
-		if($item){
-			$item->status = 0;
-			$item->save();
-			$out = response()->json(['data' => $item, 'status' => 200], 200);
+		try {
+			$item = Store::find($id);
+			if($item){
+				$item->status = 0;
+				$item->save();
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
-
 		return $out;
 	}
 
 	public function recover($id){
-		$item = Store::find($id);
-		if($item){
-			$item->status = 1;
-			$item->save();
-			$out = response()->json(['data' => $item, 'status' => 200], 200);
+		try {
+			$item = Store::find($id);
+			if($item){
+				$item->status = 1;
+				$item->save();
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
-
 		return $out;
 	}
 
+	public function getAll()
+	{
+		try {
+			$items = Store::with('person')->get();
+			$out = response()->json(['data' => $items, 'status' => 200], 200);
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
+
+	public function getSingle($id)
+	{
+		try {
+			$item = Store::with('person')->find($id);
+			if ($item) {
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			} else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
+
+	public function storeApi(StoreRequest $request){
+		try {
+			$item = new Store($request->all());
+			$item->save();
+			$out = response()->json(['data' => $item, 'status' => 201], 201);
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
 }
 ?>

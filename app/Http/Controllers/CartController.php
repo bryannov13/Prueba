@@ -91,42 +91,131 @@ class CartController extends Controller
 			'action_title' => 'Editar'
 		]);
 	}
+	public function getAll()
+	{
+		try {
+			$items = Cart::with(['product', 'person'])->get();
+			$out = response()->json(['data' => $items, 'status' => 200], 200);
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
+
+	public function getSingle($id)
+	{
+		try {
+			$item = Cart::with(['product', 'person'])->find($id);
+			if ($item) {
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			} else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
+	public function storeApi(CartRequest $request){
+		try {
+			$item = new Cart($request->all());
+			$item->save();
+			$out = response()->json(['data' => $item, 'status' => 201], 201);
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+		return $out;
+	}
 
 	public function update($id, CartRequest $request){
-		$item = Cart::find($id);
-		if($item){
-			$item->fill($request->all());
-			$item->save();
-			$out = redirect('/Cart')->with('message', 'Información actualizada correctamente');
+		try {
+			$item = Cart::find($id);
+			if($item){
+				$item->fill($request->all());
+				$item->save();
+				$out = redirect('/Cart')->with('message', 'Información actualizada correctamente');
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
 
 		return $out;
 	}
 
 	public function destroy($id){
-		$item = Cart::find($id);
-		if($item){
-			$item->status = 0;
-			$item->save();
-			$out = response()->json(['data' => $item, 'status' => 200], 200);
+		try {
+			$item = Cart::find($id);
+			if($item){
+				$item->status = 0;
+				$item->save();
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
 
 		return $out;
 	}
 
 	public function recover($id){
-		$item = Cart::find($id);
-		if($item){
-			$item->status = 1;
-			$item->save();
-			$out = response()->json(['data' => $item, 'status' => 200], 200);
+		try {
+			$item = Cart::find($id);
+			if($item){
+				$item->status = 1;
+				$item->save();
+				$out = response()->json(['data' => $item, 'status' => 200], 200);
+			}
+			else {
+				$out = response()->json(['errors' => ['Item not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
 		}
-		else $out = response()->json(['errors' => ['Item not found']], 404);
 
 		return $out;
 	}
+	
+	public function endCart($id)
+	{
+		try {
+			$cart = Cart::find($id);
+			if ($cart) {
+				// Create a new order from the cart
+				$order = new Order();
+				$order->person_id = $cart->person_id;
+				$order->total = $cart->total;
+				$order->status = 'completed';
+				$order->save();
 
+				// Add cart items to the order
+				foreach ($cart->items as $item) {
+					$orderItem = new OrderItem();
+					$orderItem->order_id = $order->id;
+					$orderItem->product_id = $item->product_id;
+					$orderItem->quantity = $item->quantity;
+					$orderItem->price = $item->price;
+					$orderItem->save();
+				}
+
+				// Clear the cart
+				$cart->items()->delete();
+				$cart->delete();
+
+				$out = response()->json(['data' => $order, 'status' => 200], 200);
+			} else {
+				$out = response()->json(['errors' => ['Cart not found']], 404);
+			}
+		} catch (\Throwable $th) {
+			$out = response()->json(['errors' => ['Bad Request']], 400);
+		}
+
+		return $out;
+	}
 }
 ?>
